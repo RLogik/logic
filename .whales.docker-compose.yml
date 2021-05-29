@@ -1,0 +1,38 @@
+version: "3"
+networks:
+  default:
+    driver: bridge
+services:
+  #---------------------------------------------------------#
+  # SERVICE: Production
+  #---------------------------------------------------------#
+  prod-service:
+    image: prod:build
+    build:
+      context: .
+      dockerfile: .whales.Dockerfile
+      args: &ref_build_args
+          WD: "$WD"
+    volumes: &ref_volume_args
+      - ./logs:$WD/logs:rw           ## <- (r/)w for logging between all docker levels.
+      - ./data:$WD/data:rw           ## <- r/w   in/output data.
+      - ./dist:$WD/dist:rw           ## <- r/w   distribution folder, VERSION + Programme artefacts.
+      - ./scripts:$WD/scripts:rw     ## <- r/w   allows for live developing
+      - ./src:$WD/src:rw             ##          ""
+      - ./test:$WD/test:rw           ##          ""
+      - ./build:$WD/build:rw         ## <- (r/)w build folder -> artefacts
+    command:
+      [ "/bin/bash", "-c", "echo -e \"Service built.\"" ]
+  #---------------------------------------------------------#
+  # SERVICE: Test
+  #---------------------------------------------------------#
+  test-service:
+    image: test:build
+    build:
+      context: .
+      dockerfile: .whales.Dockerfile
+      args:
+        <<: *ref_build_args
+    volumes: *ref_volume_args
+    command:
+      [ "/bin/bash", "-c", "echo -e \"Service built.\"" ]

@@ -1,0 +1,14 @@
+*
+
+################################################################
+# WHALES SETUP
+################################################################
+!/logging.env
+!/DOCKER_DEPTH
+
+!/.lib.docker.sh
+!/.lib.utils.sh
+!/.lib.whales.sh
+!/.lib.meta.sh
+!/.lib.sh
+!/docker.sh

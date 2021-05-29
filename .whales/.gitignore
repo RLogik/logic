@@ -1,0 +1,16 @@
+*
+!/.gitignore
+!/.dockerignore
+
+################################################################
+# WHALES SETUP
+################################################################
+!/logging.env
+!/DOCKER_DEPTH
+
+!/.lib.globals.sh
+!/.lib.utils.sh
+!/.lib.docker.sh
+!/.lib.meta.sh
+!/.lib.sh
+!/docker.sh

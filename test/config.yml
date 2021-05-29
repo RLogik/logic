@@ -1,0 +1,5 @@
+info:
+  author: RLogik
+  description: Configuration for tests.
+parts:
+  e2e: []

@@ -5,8 +5,10 @@
 # IMPORTS
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+import os;
 import sys;
-sys.tracebacklimit = 0;
+sys.tracebacklimit = 1; # <- DEVNOTE: for debugging, raise this value!
+sys.path.insert(0, os.getcwd());
 
 from src.core.log import logInfo;
 from src.core.log import logWarn;

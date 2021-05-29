@@ -1,0 +1,80 @@
+%import common.WS
+%import common.NUMBER
+%import common.WORD
+
+?search:   exprs | terms
+
+// symbols
+?space:     /\s+/       -> noncapture
+?lbrace:    /\(/ space? -> noncapture
+?rbrace:    space? /\)/ -> noncapture
+?lcurly:    /{/
+?rcurly:    /}/
+?noncurly:  /[^\{\}]+/
+?comma:     /,/
+?symb_qsep: /\.|:/
+?symb_not:  /!|~|not/
+?symb_or:   /\|+|v|or/
+?symb_and:  /\.|&+|\^|and/
+?symb_impl: />|-+>|=+>/
+?symb_iff:  /<-+>|<=+>/
+?symb_all:  /all|for all/
+?symb_ex:   /ex|exists|there exists/
+?symb_const: index
+?symb_var:   /[a-zA-Z]+/ index?
+?symb_obj:   /[\+\*\-]/ | /[a-zA-Z]+/ index?
+
+// text labels
+?label: noncurly | noncurly? ( lcurly label rcurly )+ noncurly?
+?index: /[0-9]+/ | "{" space? label space? "}"
+
+// expressions
+?exprs:  expr ( space? comma space? expr )*                                 -> exprs
+?expr:   expropen | exprclosed                                              -> expr
+?exprclosed: exprpolish | lbrace expropen rbrace | lbrace exprclosed rbrace -> exprclosed
+?expropen:   exprinfix                                                      -> expropen
+?exprpolish: relnpolish | not | quantified                                  -> expr
+?exprinfix:  relninfix | and | or | implies | iff                           -> expr
+
+// terms
+?terms: term ( space? comma space? term )*                                  -> terms
+?term: termopen | termclosed                                                -> term
+?termclosed: termpolish | lbrace termopen rbrace | lbrace termclosed rbrace -> termclosed
+?termopen: terminfix                                                        -> termopen
+?termpolish: constant | variable | funcpolish                               -> term
+?terminfix: funcinfix                                                       -> term
+
+// constants and variables
+?constant: symb_const -> constant
+?variable: symb_var   -> variable
+
+// functional expressions
+?funcsymbol: symb_obj -> symb
+?funcpolish: funcsymbol space? lbrace terms rbrace            -> funcpolish
+?funcinfix: termclosed ( space funcsymbol space termclosed )+ -> funcinfix
+
+// relational expressions
+?relnsymbol: symb_obj -> symb
+?relnpolish: relnsymbol space? lbrace terms rbrace            -> relnpolish
+?relninfix: termclosed ( space relnsymbol space termclosed )+ -> relninfix
+
+// schema for negation: ¬ F
+?not: symb_not space?  exprclosed                           -> not
+// schemata for conjunction:  F1 ⋀ F2 ⋀ ... ⋀ Fn
+?and: [ exprclosed ( space? symb_and space? exprclosed )+ ] -> and
+// schemata for disjunction: F1 ⋁ F2 ⋁ ... ⋁ Fn
+?or: [ exprclosed ( space? symb_or space?  exprclosed )+ ]  -> or
+// schema for implication: F1 ⟶ F2
+?implies: exprclosed space? symb_impl space? exprclosed     -> implies
+// schema for iff: F1 ⟷ F2
+?iff: exprclosed space? symb_iff space? exprclosed          -> iff
+// quantified expressions ∃x.φ(x), ∀x.φ(x)
+?quantified: all | exists -> quantified
+?all: |
+    | symb_all space variable space exprclosed                           -> all
+    | symb_all space variable space? symb_qsep space? exprclosed         -> all
+    | lbrace symb_all space variable rbrace symb_qsep? space? exprclosed -> all
+?exists: |
+    | symb_ex space variable space exprclosed                            -> exists
+    | symb_ex space variable space? symb_qsep space? exprclosed          -> exists
+    | lbrace symb_ex space variable rbrace symb_qsep? space? exprclosed  -> exists

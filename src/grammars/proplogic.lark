@@ -1,0 +1,49 @@
+%import common.WS
+%import common.NUMBER
+%import common.WORD
+
+?search:   exprs
+
+// symbols
+?space:     /\s+/       -> noncapture
+?lbrace:    /\(/ space? -> noncapture
+?rbrace:    space? /\)/ -> noncapture
+?lcurly:    /{/
+?rcurly:    /}/
+?noncurly:  /[^\{\}]+/
+?comma:     /,/
+?symb_not:  /!|~|not/
+?symb_or:   /\|+|v|or/
+?symb_and:  /\.|&+|\^|and/
+?symb_impl: />|-+>|=+>/
+?symb_iff:  /<-+>|<=+>/
+
+// text labels
+?label: noncurly | noncurly? ( lcurly label rcurly )+ noncurly?
+?index: /[0-9]+/ | "{" space? label space? "}"
+
+// expressions
+?exprs:  expr ( space? comma space? expr )*                                 -> exprs
+?expr:   expropen | exprclosed                                              -> expr
+?exprclosed: exprpolish | lbrace expropen rbrace | lbrace exprclosed rbrace -> exprclosed
+?expropen:   exprinfix                                                      -> expropen
+?exprpolish: atomic | not | quantified                                      -> expr
+?exprinfix:  and | or | implies | iff                                       -> expr
+
+// atomic expressions
+?atomic: tautology | contradiction | atom | generic -> atomic
+?tautology: /1|true/     -> tautology
+?contradiction: /1|true/ -> contradiction
+?atom: "atom" space? index -> atom
+?generic: "{" space? label space? "}"
+
+// schema for negation: ¬ F
+?not: symb_not space?  exprclosed                           -> not
+// schemata for conjunction:  F1 ⋀ F2 ⋀ ... ⋀ Fn
+?and: [ exprclosed ( space? symb_and space? exprclosed )+ ] -> and
+// schemata for disjunction: F1 ⋁ F2 ⋁ ... ⋁ Fn
+?or: [ exprclosed ( space? symb_or space?  exprclosed )+ ]  -> or
+// schema for implication: F1 ⟶ F2
+?implies: exprclosed space? symb_impl space? exprclosed     -> implies
+// schema for iff: F1 ⟷ F2
+?iff: exprclosed space? symb_iff space? exprclosed          -> iff

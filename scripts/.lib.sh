@@ -34,7 +34,7 @@ function create_python_venv() {
 }
 
 function activate_python_venv() {
-    # if ( is_docker ); then return 0; fi
+    if ( is_docker ); then return 0; fi
     if ( is_linux ); then
         source $PATH_BUILD/env/bin/activate;
     else
@@ -43,7 +43,7 @@ function activate_python_venv() {
 }
 
 function deactivate_python_venv() {
-    # if ( is_docker ); then return 0; fi
+    if ( is_docker ); then return 0; fi
     if ( is_linux ); then
         source env/bin/deactivate;
     else
@@ -130,8 +130,6 @@ function run_setup() {
         ( is_comment "$line" ) && continue;
         call_pipinstall "$line"
     done <<< "$( cat "${PATH_REQ_PY}" )"
-    # _log_info "Dectivate VENV";
-    # deactivate_python_venv;
 }
 
 function run_explore_console() {

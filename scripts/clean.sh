@@ -15,8 +15,8 @@ ME="./scripts/clean.sh";
 source scripts/.lib.sh;
 
 mode="$(    get_one_kwarg_space "$SCRIPTARGS" "-+mode"    "" )";
-service="$( get_one_kwarg_space "$SCRIPTARGS" "-+service" "" )";
-tags="$(    get_one_kwarg_space "$SCRIPTARGS" "-+tags"    "" )";
+service="$( get_one_kwarg_space "$SCRIPTARGS" "-+service" "prod-service" )";
+tags="$(    get_one_kwarg_space "$SCRIPTARGS" "-+tags"    "setup,run,unit,explore" )";
 
 if [ "$mode" == "docker" ]; then
     source .whales/docker.sh --service "$service" --clean;
@@ -24,7 +24,7 @@ elif [ "$mode" == "docker-all" ]; then
     source .whales/docker.sh --clean-all;
 elif [ "$mode" == "artefacts" ]; then
     # whale_call <service> <tag-sequence> <save, it, ports> <type, command>
-    whale_call  "$service" "$TAGS"        true false false  SCRIPT $ME $SCRIPTARGS;
+    whale_call  "$service" "$tags"        true false false  SCRIPT $ME $SCRIPTARGS;
     run_clean_artefacts;
 else
     _log_error   "Invalid cli argument.";

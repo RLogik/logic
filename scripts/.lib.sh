@@ -34,7 +34,7 @@ function create_python_venv() {
 }
 
 function activate_python_venv() {
-    if ( is_docker ); then return 0; fi
+    ! ( is_docker ) && return 0;
     if ( is_linux ); then
         source $PATH_BUILD/env/bin/activate;
     else
@@ -43,11 +43,11 @@ function activate_python_venv() {
 }
 
 function deactivate_python_venv() {
-    if ( is_docker ); then return 0; fi
+    ! ( is_docker ) && return 0;
     if ( is_linux ); then
-        source env/bin/deactivate;
+        source $PATH_BUILD/env/bin/deactivate;
     else
-        source env/Scripts/deactivate;
+        source $PATH_BUILD/env/Scripts/deactivate;
     fi
 }
 
@@ -96,8 +96,13 @@ function clean_by_pattern() {
 }
 
 function garbage_collection_build() {
-    rm -rf $PATH_BUILD;
-    _cli_message "    (\033[91mforce removed\033[0m) folder \033[94m$PATH_BUILD\033[0m";
+    local path;
+    while read path; do
+        [ "$path" == "" ] && continue;
+        [ -f "$path" ] && remove_file "$path" >> $VERBOSE && continue;
+        [ -d "$path" ] && rm -rf "$path" && continue;
+    done <<< $( find $PATH_BUILD -mindepth 1 2> $VERBOSE );
+    _cli_message "    (\033[91mforce removed\033[0m) contents of \033[94m$PATH_BUILD/\033[0m";
 }
 
 function garbage_collection_python() {
@@ -125,6 +130,7 @@ function run_setup() {
     _log_info "Check requirements";
     call_pipinstall --upgrade pip;
     call_pipinstall --upgrade wheel;
+    local line;
     while read line; do
         [ "$line" == "" ] && continue;
         ( is_comment "$line" ) && continue;

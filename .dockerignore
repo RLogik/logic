@@ -1,6 +1,4 @@
 *
-!/.gitignore
-!/.dockerignore
 
 # Need these for Whales project:
 !/.whales
@@ -30,6 +28,7 @@
 !/src/core
 !/src/grammars
 !/src/fol
+!/src/proplogic
 !/src/**/*.py
 !/src/**/*.lark
 !/src/**/*.yml
@@ -38,6 +37,7 @@
 !/test/core
 !/test/grammars
 !/test/fol
+!/test/proplogic
 !/test/**/*.py
 !/test/**/*.lark
 !/test/**/*.yml

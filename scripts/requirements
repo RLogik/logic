@@ -1,0 +1,9 @@
+python-dotenv==0.17.1
+pyyaml==5.4.1
+typing==3.7.4.3
+
+## LARK
+lark==0.11.3
+lark-parser==0.11.3
+## equivalent to lark-parser[regex]
+regex==2021.4.4

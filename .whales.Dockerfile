@@ -1,9 +1,4 @@
-################################################################
-# !!! The following is an exmaple. Replace this by desired docker image instructions. !!!
-FROM python:3.9.5-slim
-#
-#
-################################################################
+FROM python:3.10.0b1-slim
 
 ################################################################################
 # START OF INSTRUCTIONS REQUIRED FOR WHALES PROJECT
@@ -33,4 +28,10 @@ RUN echo "export LOGGINGPREFIX=\">\";" >> "${WHALES_SETUP_PATH}/.lib.globals.sh"
 # END OF INSTRUCTIONS REQUIRED FOR WHALES PROJECT
 ################################################################################
 
-# !!! Your build instructions here !!!
+ARG DEBIAN_FRONTEND=noninteractive
+RUN apt-get -y update && apt-get -y upgrade
+RUN apt-get install -y dos2unix
+RUN apt-get install -y gcc libc-dev
+RUN apt-get clean
+RUN [ "/bin/bash", "-c", "chmod +x scripts/*.sh" ]
+RUN [ "/bin/bash", "-c", "dos2unix scripts/*.sh" ]

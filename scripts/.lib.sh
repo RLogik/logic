@@ -15,6 +15,7 @@ source .whales/.lib.sh;
 
 export PATH_SOURCE="src";
 export PATH_TEST="test";
+export PATH_BUILD="build"
 env_from ".env" import REQUIREMENTS_PY AS PATH_REQ_PY;
 env_from ".env" import CONFIG as PATH_CONFIG;
 env_from ".env" import TESTCONFIG as PATH_TESTCONFIG;
@@ -25,11 +26,41 @@ env_from ".env" import UNITTEST_SCHEMA as UNITTEST_SCHEMA;
 # AUXILIAR METHODS: Python
 ##############################################################################
 
+function create_python_venv() {
+    ! [ -d $PATH_BUILD ] && mkdir $PATH_BUILD;
+    pushd $PATH_BUILD >> $VERBOSE;
+        call_python -m venv env;
+    popd >> $VERBOSE;
+}
+
+function activate_python_venv() {
+    # if ( is_docker ); then return 0; fi
+    if ( is_linux ); then
+        source $PATH_BUILD/env/bin/activate;
+    else
+        source $PATH_BUILD/env/Scripts/activate;
+    fi
+}
+
+function deactivate_python_venv() {
+    # if ( is_docker ); then return 0; fi
+    if ( is_linux ); then
+        source env/bin/deactivate;
+    else
+        source env/Scripts/deactivate;
+    fi
+}
+
 function call_python() {
-    ( is_linux ) && python3 $@ || py -3 $@;
+    if ( is_linux ); then
+        python3 $@;
+    else
+        py -3 $@;
+    fi
 }
 
 function call_pipinstall() {
+    # Do not use --user flag with venv
     call_python -m pip install $@;
 }
 
@@ -64,6 +95,11 @@ function clean_by_pattern() {
     fi
 }
 
+function garbage_collection_build() {
+    rm -rf $PATH_BUILD;
+    _cli_message "    (\033[91mforce removed\033[0m) folder \033[94m$PATH_BUILD\033[0m";
+}
+
 function garbage_collection_python() {
     objects=( $(ls {,**/,**/**/}*.pyo 2> $VERBOSE) );
     n=${#objects[@]};
@@ -82,8 +118,20 @@ function garbage_collection_python() {
 
 function run_setup() {
     _log_info "SETUP"
+    _log_info "Create VENV";
+    create_python_venv;
+    _log_info "Activate VENV";
+    activate_python_venv;
     _log_info "Check requirements";
-    call_pipinstall "$( cat ${PATH_REQ_PY} )";
+    call_pipinstall --upgrade pip;
+    call_pipinstall --upgrade wheel;
+    while read line; do
+        [ "$line" == "" ] && continue;
+        ( is_comment "$line" ) && continue;
+        call_pipinstall "$line"
+    done <<< "$( cat "${PATH_REQ_PY}" )"
+    # _log_info "Dectivate VENV";
+    # deactivate_python_venv;
 }
 
 function run_explore_console() {
@@ -92,10 +140,9 @@ function run_explore_console() {
 }
 
 function run_main() {
-    cwd="$PWD";
-    pushd "$PATH_SOURCE" >> $VERBOSE
-        call_python main.py "$cwd/$PATH_CONFIG";
-    popd >> $VERBOSE
+    _log_info "Activate VENV";
+    activate_python_venv;
+    call_python $PATH_SOURCE/main.py "$PATH_CONFIG";
 }
 
 function run_test_unit() {
@@ -103,6 +150,8 @@ function run_test_unit() {
     verboseoption="";
     ( $asverbose ) && verboseoption="-v";
     _log_info "UNITTESTS";
+    _log_info "Activate VENV";
+    activate_python_venv;
     local output="$(call_utest              \
         $verboseoption                      \
         --top-level-directory "."           \
@@ -117,15 +166,11 @@ function run_test_unit() {
 }
 
 function run_test_e2e() {
-    cwd="$PWD";
-    _log_info "E2E TESTS";
-    pushd "$PATH_TEST" >> $VERBOSE
-        call_python e2e.py "$cwd/$PATH_TESTCONFIG";
-    popd >> $VERBOSE
+    call_python $PATH_TESTCONFIG/e2e.py "$PATH_TESTCONFIG";
 }
 
 function run_clean_artefacts() {
-    _log_warn "Clean process not yet implemented!";
     _log_info "CLEAN ARTEFACTS";
-    garbage_collection_python
+    garbage_collection_build;
+    garbage_collection_python;
 }

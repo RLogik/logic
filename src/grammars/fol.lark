@@ -5,28 +5,30 @@
 ?search:   exprs | terms
 
 // symbols
-?space:     /\s+/       -> noncapture
-?lbrace:    /\(/ space? -> noncapture
-?rbrace:    space? /\)/ -> noncapture
-?lcurly:    /{/
-?rcurly:    /}/
-?noncurly:  /[^\{\}]+/
-?comma:     /,/
-?symb_qsep: /\.|:/
-?symb_not:  /!|~|not/
-?symb_or:   /\|+|v|or/
-?symb_and:  /\.|&+|\^|and/
-?symb_impl: />|-+>|=+>/
-?symb_iff:  /<-+>|<=+>/
-?symb_all:  /all|for all/
-?symb_ex:   /ex|exists|there exists/
-?symb_const: index
-?symb_var:   /[a-zA-Z]+/ index?
-?symb_obj:   /[\+\*\-]/ | /[a-zA-Z]+/ index?
+?space:      /\s+/                    -> noncapture
+?lbrace:     /\(/ space?              -> noncapture
+?rbrace:     space? /\)/              -> noncapture
+?lcurly:     /{/
+?rcurly:     /}/
+?noncurly:   /[^\{\}]+/
+?comma:      /,/                      -> noncapture
+?symb_qsep:  /\.|:/                   -> noncapture
+?symb_not:   /!|~|not/                -> noncapture
+?symb_or:    /\|+|v|or/               -> noncapture
+?symb_and:   /\.|&+|\^|and/           -> noncapture
+?symb_impl:  />|-+>|=+>/              -> noncapture
+?symb_iff:   /<-+>|<=+>/              -> noncapture
+?symb_all:   /all|for all/            -> noncapture
+?symb_ex:    /ex|exists|there exists/ -> noncapture
+?symb_const: /c|const/i | /c|const/i index | /c|const/i indexlabel
+?symb_var:   /x|y|z/i | /x|y|z/i index | /x|y|z/i indexlabel
+?symb_func:  /\+|\*|\-|f/i | /\+|\*|\-|f/i index | /\+|\*|\-|f/i indexlabel
+?symb_reln:  /\+|\*|\-|R/i | /\+|\*|\-|R/i index | /\+|\*|\-|R/i indexlabel
 
 // text labels
-?label: noncurly | noncurly? ( lcurly label rcurly )+ noncurly?
-?index: /[0-9]+/ | "{" space? label space? "}"
+?index: /[0-9]+/
+?indexlabel: "{" space? label space? "}"
+?label: noncurly | noncurly? ( lcurly label rcurly noncurly? )+
 
 // expressions
 ?exprs:  expr ( space? comma space? expr )*                                 -> exprs
@@ -49,12 +51,12 @@
 ?variable: symb_var   -> variable
 
 // functional expressions
-?funcsymbol: symb_obj -> symb
+?funcsymbol: symb_func -> symb
 ?funcpolish: funcsymbol space? lbrace terms rbrace            -> funcpolish
 ?funcinfix: termclosed ( space funcsymbol space termclosed )+ -> funcinfix
 
 // relational expressions
-?relnsymbol: symb_obj -> symb
+?relnsymbol: symb_reln -> symb
 ?relnpolish: relnsymbol space? lbrace terms rbrace            -> relnpolish
 ?relninfix: termclosed ( space relnsymbol space termclosed )+ -> relninfix
 

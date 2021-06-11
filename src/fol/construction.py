@@ -7,6 +7,7 @@
 
 from __future__ import annotations;
 from copy import copy;
+from typing import Union;
 
 from src.fol.classes import Expression;
 
@@ -48,6 +49,33 @@ def genericAssociative(kind: str, *args: Expression) -> Expression:
     t.glueOuterOption = 'infixwithouter';
     return t;
 
+def genericLabelledToken(kind, name: str, index: Union[str, None] = None, is_indexlike: bool = False, is_generic: bool = False) -> Expression:
+    t = genericZeroary(kind);
+    t.isLabelled = True;
+    if index is None:
+        t.label      = name;
+        t.symbol     = name;
+        t.display    = name;
+    elif is_indexlike:
+        if is_generic:
+            t.label      = index;
+            t.symbol     = '{}{{{}}}'.format(name, index);
+            t.display    = '{{{}}}'.format(index);
+        else:
+            t.label      = '{{{}}}'.format(index);
+            t.symbol     = '{{{}}}'.format(index);
+            t.display    = '{{{}}}'.format(index);
+    else:
+        if is_generic:
+            t.label      = index;
+            t.symbol     = '{}{{{}}}'.format(name, index);
+            t.display    = '{}_{{{}}}'.format(name, index);
+        else:
+            t.label      = '{}_{{{}}}'.format(name, index);
+            t.symbol     = '{}_{{{}}}'.format(name, index);
+            t.display    = '{}_{{{}}}'.format(name, index);
+    return t;
+
 def genericPolishFuncReln(kind: str, S: Expression, *terms: Expression) -> Expression:
     t = Expression(kind, *terms);
     t.isLabelled      = True;
@@ -81,55 +109,25 @@ def genericQuantified(kind: str, x: Expression, fml: Expression) -> Expression:
 # METHODS: variable, constant, function, relation
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-def Variable(symb: str) -> Expression:
-    kind = 'variable';
-    t = genericZeroary(kind);
-    t.isLabelled = True;
-    t.label      = symb;
-    t.symbol     = symb;
-    t.display    = symb;
-    return t;
+def Variable(name: str, index: Union[str, None], is_indexlike: bool, is_generic: bool) -> Expression:
+    return genericLabelledToken('variable', name, index, is_indexlike, is_generic);
 
-def Constant(symb: str) -> Expression:
-    kind = 'constant';
-    t = genericZeroary(kind);
-    t.isLabelled = True;
-    t.label      = symb;
-    t.symbol     = symb;
-    t.display    = symb;
-    return t;
+def Constant(name: str, index: Union[str, None], is_indexlike: bool, is_generic: bool) -> Expression:
+    return genericLabelledToken('constant', name, index, is_indexlike, is_generic);
 
-def Function(symb: str) -> Expression:
-    kind = 'function';
-    t = genericZeroary(kind);
-    t.label   = symb;
-    t.symbol  = symb;
-    t.display = symb;
-    return t;
+def Function(name: str, index: Union[str, None], is_indexlike: bool, is_generic: bool) -> Expression:
+    return genericLabelledToken('function', name, index, is_indexlike, is_generic);
 
 def FunctionExpression(F: Expression, *terms: Expression, polish: bool = True) -> Expression:
     kind = 'functionexpression';
-    if polish:
-        t = genericPolishFuncReln(kind, F, *terms);
-    else:
-        t = genericInfixFuncReln(kind, F, *terms);
-    return t;
+    return genericPolishFuncReln(kind, F, *terms) if polish else genericInfixFuncReln(kind, F, *terms);
 
-def Relation(symb: str) -> Expression:
-    kind = 'relation';
-    t = genericZeroary(kind);
-    t.label   = symb;
-    t.symbol  = symb;
-    t.display = symb;
-    return t;
+def Relation(name: str, index: Union[str, None], is_indexlike: bool, is_generic: bool) -> Expression:
+    return genericLabelledToken('relation', name, index, is_indexlike, is_generic);
 
 def RelationExpression(R: Expression, *terms: Expression, polish: bool = True) -> Expression:
     kind = 'relationexpression';
-    if polish:
-        t = genericPolishFuncReln(kind, R, *terms);
-    else:
-        t = genericInfixFuncReln(kind, R, *terms);
-    return t;
+    return genericPolishFuncReln(kind, R, *terms) if polish else genericInfixFuncReln(kind, R, *terms);
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # METHODS: 0th order connectives
@@ -185,13 +183,13 @@ def Iff(subfml0: Expression, subfml1: Expression) -> Expression:
 def QuantifiedAll(x: Expression, subfml: Expression) -> Expression:
     kind = 'all';
     t = genericQuantified(kind, x, subfml);
-    t.symbol = 'all';
+    t.symbol  = 'all';
     t.display = r'\mathop{\forall}';
     return t;
 
 def QuantifiedExists(x: Expression, subfml: Expression) -> Expression:
     kind = 'exists';
     t = genericQuantified(kind, x, subfml);
-    t.symbol = 'exists';
+    t.symbol  = 'exists';
     t.display = r'\mathop{\exists}';
     return t;

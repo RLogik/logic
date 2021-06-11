@@ -9,6 +9,7 @@ from __future__ import annotations;
 from lark import Lark;
 from lark import Tree;
 from typing import List;
+from typing import Tuple;
 from typing import Union;
 
 from src.fol.classes import Expression;
@@ -83,11 +84,11 @@ def lexedToExpr(u: Tree) -> Expression:
     elif typ == 'expropen':
         return lexedToExpr(children[0]).showOuterBraces(False);
     elif typ == 'constant':
-        name = lexedToStr(u);
-        return Constant(name);
+        label = lexedToLabel(children[0], is_indexlike=True);
+        return Constant(*label);
     elif typ == 'variable':
-        name = lexedToStr(u);
-        return Variable(name);
+        label = lexedToLabel(children[0]);
+        return Variable(*label);
     elif typ == 'term':
         return lexedToExpr(children[0]);
     elif typ == 'termclosed':
@@ -95,31 +96,19 @@ def lexedToExpr(u: Tree) -> Expression:
     elif typ == 'termopen':
         return lexedToExpr(children[0]).showOuterBraces(False);
     elif typ == 'funcpolish':
-        name = lexedToStr(children[0]);
-        return FunctionExpression(Function(name), *lexedToExprs(children[1]), polish=True);
+        label = lexedToLabel(children[0]);
+        return FunctionExpression(Function(*label), *lexedToExprs(children[1]), polish=True);
     elif typ == 'funcinfix':
-        names = list(set([lexedToStr(child) for child in children if child.data == 'symb']));
-        assert len(names) == 1, 'Cannot parse expression with inconsistent infix symbols';
-        name = names[0];
-        terms = [];
-        for child in children:
-            if child.data == 'symb':
-                continue;
-            terms.append(lexedToExpr(child));
-        return FunctionExpression(Function(name), *terms, polish=False);
+        labels = list(set([ lexedToLabel(child) for child in filterOps(u) ]));
+        assert len(labels) == 1, 'Cannot parse expression with inconsistent infix symbols';
+        return FunctionExpression(Function(*labels[0]), *[ lexedToExpr(child) for child in filterOutOps(u) ], polish=False);
     elif typ == 'relnpolish':
-        name = lexedToStr(children[0]);
-        return RelationExpression(Relation(name), *lexedToExprs(children[1]), polish=True);
+        label = lexedToLabel(children[0]);
+        return RelationExpression(Relation(*label), *lexedToExprs(children[1]), polish=True);
     elif typ == 'relninfix':
-        names = list(set([lexedToStr(child) for child in children if child.data == 'symb']));
-        assert len(names) == 1, 'Cannot parse expression with inconsistent infix symbols';
-        name = names[0];
-        terms = [];
-        for child in children:
-            if child.data == 'symb':
-                continue;
-            terms.append(lexedToExpr(child));
-        return RelationExpression(Relation(name), *terms, polish=False);
+        labels = list(set([ lexedToLabel(child) for child in filterOps(u) ]));
+        assert len(labels) == 1, 'Cannot parse expression with inconsistent infix symbols';
+        return RelationExpression(Relation(*labels[0]), *[ lexedToExpr(child) for child in filterOutOps(u) ], polish=False);
     elif typ == 'not':
         return Not(lexedToExpr(children[0]));
     elif typ == 'and':
@@ -138,10 +127,43 @@ def lexedToExpr(u: Tree) -> Expression:
         return QuantifiedExists(lexedToExpr(children[0]), lexedToExpr(children[1]));
     raise Exception('Could not parse expression!');
 
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# AUXILIARY METHODS: filtration
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+def lexedToLabel(u: Tree, is_indexlike: bool = False) -> Tuple[str, Union[str, None], bool, bool]:
+    typ = u.data;
+    if typ == 'op':
+        children = filterSubexpr(u);
+        return lexedToLabel(children[0]);
+    elif typ == 'name':
+        is_generic = False;
+        children = filterOutNoncapture(u);
+        name = lexedToStr(children[0]);
+        index = lexedToStr(children[1]) if len(children) >= 2 else None;
+        is_generic = ( isinstance(children[0], Tree) and children[0].data == 'symb' );
+        if is_indexlike:
+            if is_generic:
+                is_indexlike = False;
+            else:
+                index = name;
+                name = '';
+        return name, index, is_indexlike, is_generic;
+    raise Exception('Could not parse label!');
+
 def lexedToStr(u: Union[str, Tree]) -> str:
-    if isinstance(u, Tree):
-        return ''.join([ lexedToStr(uu) for uu in u.children ]);
-    return str(u);
+    if isinstance(u, str):
+        return str(u);
+    return ''.join([ lexedToStr(uu) for uu in u.children ]);
 
 def filterSubexpr(u: Tree) -> List[Tree]:
     return [uu for uu in u.children if isinstance(uu, Tree) and hasattr(uu, 'data') and not uu.data == 'noncapture'];
+
+def filterOps(u: Tree) -> List[Tree]:
+    return [uu for uu in filterSubexpr(u) if uu.data == 'op' ];
+
+def filterOutOps(u: Tree) -> List[Tree]:
+    return [uu for uu in filterSubexpr(u) if not uu.data == 'op' ];
+
+def filterOutNoncapture(u: Tree) -> List[Union[str, Tree]]:
+    return [uu for uu in u.children if not isinstance(uu, Tree) or ( hasattr(uu, 'data') and not uu.data == 'noncapture' ) ];

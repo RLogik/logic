@@ -164,7 +164,7 @@ class Expression(object):
         if self.valence == 0:
             return self.display;
         option = self.glueOuterOption if self.outerBrackets else self.glueOption;
-        return glue(option, self.display, *[str(_) for _ in self.parts]);
+        return glue(option, self.display, *[_.expr for _ in self.parts]);
 
     def showOuterBraces(self, show: bool=True) -> Expression:
         self.outerBrackets = show;
@@ -177,7 +177,7 @@ class Expression(object):
 
     def pretty(self, preindent: str = '', tab: str = '  ', prepend: str = '', depth: int = 0) -> str:
         indent = preindent + tab*depth;
-        symb = ' \033[1m{}\033[0m'.format(self.symbol) if (self.IsAtomic or self.IsTerm) else '';
+        symb = ' \033[1m{}\033[0m'.format(self.label) if (self.IsAtomic or self.IsTerm) else '';
         return '\n'.join(
             [indent + prepend + self.kind + symb] \
             + [child.pretty(preindent, tab, '|__ ', depth+1) for child in self.parts]

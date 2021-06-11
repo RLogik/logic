@@ -11,7 +11,11 @@
 ?lcurly:     /{/
 ?rcurly:     /}/
 ?noncurly:   /[^\{\}]+/
+?quotesg:    /\'/
+?quotedbl:   /\"/
+?nonquote:   /[^\'\"]+/
 ?comma:      /,/                      -> noncapture
+?subscrsep:  /\_/                     -> noncapture
 ?symb_qsep:  /\.|:/                   -> noncapture
 ?symb_not:   /!|~|not/                -> noncapture
 ?symb_or:    /\|+|v|or/               -> noncapture
@@ -20,14 +24,37 @@
 ?symb_iff:   /<-+>|<=+>/              -> noncapture
 ?symb_all:   /all|for all/            -> noncapture
 ?symb_ex:    /ex|exists|there exists/ -> noncapture
-?symb_const: /c|const/i | /c|const/i index | /c|const/i indexlabel
-?symb_var:   /x|y|z/i | /x|y|z/i index | /x|y|z/i indexlabel
-?symb_func:  /\+|\*|\-|f/i | /\+|\*|\-|f/i index | /\+|\*|\-|f/i indexlabel
-?symb_reln:  /\+|\*|\-|R/i | /\+|\*|\-|R/i index | /\+|\*|\-|R/i indexlabel
+?generic_const: /const/               -> symb
+?generic_var:   /var/                 -> symb
+?generic_func:  /func/                -> symb
+?generic_reln:  /reln/                -> symb
+?name_const: |
+    | generic_const space? index                          -> name
+    | digits                                              -> name
+    | index                                               -> name
+?name_var: |
+    | generic_var space? index                            -> name
+    | /[a-zA-Z]+/i                                        -> name
+    | /[a-zA-Z]+/i digits                                 -> name
+    | /[a-zA-Z]+/i space? subscrsep space? index          -> name
+?name_func: |
+    | generic_func space? index                           -> name
+    | /\+|\*|\-|[a-zA-Z]+/i                               -> name
+    | /\+|\*|\-|[a-zA-Z]+/i digits                        -> name
+    | /\+|\*|\-|[a-zA-Z]+/i space? subscrsep space? index -> name
+?name_reln: |
+    | generic_reln space? index                           -> name
+    | /\+|\*|\-|[a-zA-Z]+/i                               -> name
+    | /\+|\*|\-|[a-zA-Z]+/i digits                        -> name
+    | /\+|\*|\-|[a-zA-Z]+/i space? subscrsep space? index -> name
 
 // text labels
-?index: /[0-9]+/
-?indexlabel: "{" space? label space? "}"
+?digits: /[0-9]+/
+?index: indexquotes | indexbraces
+?indexquotes: "'" labelinsidequotes "'" | "\"" labelinsidequotes "\""
+?indexbraces: "{" space? label space? "}"
+?labelinsidequotes_closed: quotesg labelinsidequotes quotesg | quotedbl labelinsidequotes quotedbl
+?labelinsidequotes: nonquote | nonquote? ( labelinsidequotes_closed nonquote? )+
 ?label: noncurly | noncurly? ( lcurly label rcurly noncurly? )+
 
 // expressions
@@ -47,16 +74,16 @@
 ?terminfix: funcinfix                                                       -> term
 
 // constants and variables
-?constant: symb_const -> constant
-?variable: symb_var   -> variable
+?constant: name_const -> constant
+?variable: name_var   -> variable
 
 // functional expressions
-?funcsymbol: symb_func -> symb
+?funcsymbol: name_func -> op
 ?funcpolish: funcsymbol space? lbrace terms rbrace            -> funcpolish
 ?funcinfix: termclosed ( space funcsymbol space termclosed )+ -> funcinfix
 
 // relational expressions
-?relnsymbol: symb_reln -> symb
+?relnsymbol: name_reln -> op
 ?relnpolish: relnsymbol space? lbrace terms rbrace            -> relnpolish
 ?relninfix: termclosed ( space relnsymbol space termclosed )+ -> relninfix
 

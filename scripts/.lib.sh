@@ -21,7 +21,6 @@ env_from ".env" import CONFIG as PATH_CONFIG;
 env_from ".env" import TESTCONFIG as PATH_TESTCONFIG;
 env_from ".env" import UNITTEST_SCHEMA as UNITTEST_SCHEMA;
 
-
 ##############################################################################
 # AUXILIAR METHODS: Python
 ##############################################################################
@@ -134,8 +133,8 @@ function run_setup() {
     while read line; do
         [ "$line" == "" ] && continue;
         ( is_comment "$line" ) && continue;
-        call_pipinstall "$line"
-    done <<< "$( cat "${PATH_REQ_PY}" )"
+        call_pipinstall "$line";
+    done <<< "$( cat "${PATH_REQ_PY}" )";
 }
 
 function run_explore_console() {
